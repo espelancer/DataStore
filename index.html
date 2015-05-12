@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="pouchdb.min.js"></script>
+  </head>
+  <body>
+    <script>
+      var db = new PouchDB('mydb', {adapter: 'websql'});
+      db.info().then(function (info) {
+        console.log(info);
+      });
+    </script>
+  </body>
+</html>
