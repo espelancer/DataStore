@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="pouchdb.min.js"></script>
+    <script src="js/third-party/core/jquery-1.11.2.min.js"></script>
+    <script src="js/third-party/db/pouchdb.min.js"></script>
+    <script src="js/core/Require.js"></script>
+    <script src="js/ent/EntLoader.js"></script>
+    <script src="js/ent/Ent.js"></script>
+    <script src="app/js/ents/EntMessage.js"></script>
   </head>
   <body>
-    <script>
-      var db = new PouchDB('mydb', {adapter: 'websql'});
-      db.info().then(function (info) {
-        console.log(info);
-      });
-    </script>
   </body>
 </html>
