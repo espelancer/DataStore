@@ -3,6 +3,10 @@
 var EntLoader = {
 
 	_entDB: new PouchDB('entDB'),
+	
+	isTempEnt: function(id) {
+		return (id.indexOf('tmp#') !== -1);
+	},
 
 	load: function(id, entType) {
 		var callback = null;
@@ -72,6 +76,17 @@ var EntLoader = {
 		newObject._id = id;
 		EntLoader._entDB.get(id).then(function (doc) {
 			newObject._rev = doc._rev;
+			if (_.isEqual(newObject, doc)) {
+				if (callback) {
+  					callback(doc.id);
+  				} else {
+  					res = doc.id;
+  				}
+  				return {
+  					catch: function(fn) {}
+  				}
+			}
+			
   			return EntLoader._entDB.put(newObject).then(function (doc) {
   				if (callback) {
   					callback(doc.id);

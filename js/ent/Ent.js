@@ -44,24 +44,20 @@ var Ent = {
 			
   			this.getEntType = function() { return entType; };
   			this.getID = function() { return id; };
+  			this.isTempEnt = function() { return EntLoader.isTempEnt(id); };
   			
   			if (typeof(this.canSee) !== 'function') {
   				this.canSee = function() { return true; };
   			}
   			if (typeof(this.save) !== 'function') {
   				this.save = function() {
-  					var isTmp = false;
-					var tmp_prefix = 'tmp#';
-					if (id.indexOf(tmp_prefix) !== -1) {
-						isTmp = true;
-					}
-
 		 			var callback = null;
 		 			var res;
-  					if (isTmp) {
+  					if (EntLoader.isTempEnt(id)) {
   						entLoader.save(null, entType, this._data)
   						.then(function(saved_id) {
   							this.getID = function() { return saved_id; };
+  							this.isTempEnt = function() { return false; };
   							Ent._entCache[saved_id] = this;
   							if (callback) {
   								callback(saved_id);
