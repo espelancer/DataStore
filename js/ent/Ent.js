@@ -7,10 +7,142 @@ var Ent = {
   	
   	_validLoader: function(loader) {
   		if (typeof(loader.load) !== 'function' ||
+  			typeof(loader.loadGivenType) !== 'function' ||
   			typeof(loader.save) !== 'function') {
   			throw 'Invalid loader';
   		}
   	},
+  	
+	genNullableFromID: function(id) {
+		if (!id || typeof(id) !== 'string') {
+			return {
+ 				then: function(fn) {
+ 					fn(null);
+ 				}
+ 			};
+ 		}
+		 		
+		if (typeof(Ent._entCache[id]) !== 'undefined') {
+ 			return {
+ 				then: function(fn) {
+ 					fn(Ent._entCache[id]);
+ 				}
+ 			};
+		}
+		 		
+		var callback = null;
+ 		var res;
+		Ent.genNewNullableFromID(id).then(function(ent) {
+		 	Ent._entCache[id] = ent;
+			if (callback) {
+		 		callback(ent);
+		 	} else {
+				res = ent;
+			}
+		});
+		 		
+ 		return {
+ 			then: function(fn) {
+ 				if (typeof(res) !== 'undefined') {
+ 					fn(res);
+ 				} else {
+ 					callback = fn;
+ 				}
+ 			}
+ 		};
+ 	},
+		 	
+	genEnforceFromID: function(id) {
+		if (!id || typeof(id) !== 'string') {
+			throw 'id is required';
+		}
+		 		
+		var callback = null;
+		var res;
+		this.genNullableFromID(id).then(function(ent) {
+		 	if (ent === null) {
+				throw 'Invalid Ent';
+			}
+		 	if (callback) {
+				callback(ent);
+		 	} else {
+				res = ent;
+		 	}
+		});
+		 		
+ 		return {
+ 			then: function(fn) {
+ 				if (typeof(res) !== 'undefined') {
+ 					fn(res);
+ 				} else {
+ 					callback = fn;
+ 				}
+ 			}
+ 		};
+	},
+		 	
+  	genNewNullableFromID: function(id) {
+		var callback = null;
+		var res;
+		EntLoader.load(id).then(function(doc) {
+			var entType = doc.entType;
+			if (!Ent._entClassMap[entType]) {
+				if (callback) {
+					callback(null);
+				} else {
+					res = null;
+				}
+				return;
+			}
+			delete doc.entType;
+			window[entType].genNullableFromData(doc, id).then(function(ent) {
+				if (callback) {
+					callback(ent);
+				} else {
+					res = ent;
+				}
+			});
+		}.bind(this));
+		 		
+ 		return {
+ 			then: function(fn) {
+ 				if (typeof(res) !== 'undefined') {
+ 					fn(res);
+ 				} else {
+ 					callback = fn;
+ 				}
+ 			}
+ 		};
+ 	},
+		 	
+	genNewEnforceFromID: function(id) {
+		if (!id || typeof(id) !== 'string') {
+			throw 'id is required';
+		}
+		 		
+		var callback = null;
+		var res;
+		Ent.genNewNullableFromID(id).then(function(ent) {
+			if (ent === null) {
+		 		throw 'Invalid Ent';
+		 	}
+			if (callback) {
+		 		callback(ent);
+			} else {
+		 		res = ent;
+			}
+		});
+		 		
+ 		return {
+ 			then: function(fn) {
+ 				if (typeof(res) !== 'undefined') {
+ 					fn(res);
+				} else {
+ 					callback = fn;
+ 				}
+ 			}
+ 		};
+	},
       
   	create: function(entType, entData, entLoader) {
 		if (!entType) {
@@ -170,7 +302,7 @@ var Ent = {
 		 		
 		 		var callback = null;
 		 		var res;
-				entLoader.load(id, entType).then(function(data) {
+				entLoader.loadGivenType(id, entType).then(function(data) {
 					this.genNullableFromData(data, id).then(function(ent) {
 						if (callback) {
 							callback(ent);

@@ -7,13 +7,12 @@ var EntLoader = {
 	isTempEnt: function(id) {
 		return (id.indexOf('tmp#') !== -1);
 	},
-
-	load: function(id, entType) {
+	
+	loadGivenType: function(id, entType) {
 		var callback = null;
 		var res;
-		EntLoader._entDB.get(id).then(function (doc) {
-			var data = doc;
-			if (data.entType !== entType) {
+		EntLoader.load(id).then(function(doc) {
+			if (doc.entType !== entType) {
 				if (callback) {
 					callback(null);
 				} else {
@@ -21,13 +20,35 @@ var EntLoader = {
 				}
 				return;
 			}
-			delete data._rev;
-			delete data._id;
-			delete data.entType;
+			delete doc.entType;
 			if (callback) {
-				callback(data);
+				callback(doc);
 			} else {
-				res = data;
+				res = doc;
+			}
+		});
+			
+		return {
+			then: function(fn) {
+				if (typeof(res) !== 'undefined') {
+ 					fn(res);
+ 				} else {
+ 					callback = fn;
+ 				}
+			}
+		};
+	},
+
+	load: function(id) {
+		var callback = null;
+		var res;
+		EntLoader._entDB.get(id).then(function (doc) {
+			delete doc._rev;
+			delete doc._id;
+			if (callback) {
+				callback(doc);
+			} else {
+				res = doc;
 			}
 		}).catch(function (err) {
 			if (callback) {

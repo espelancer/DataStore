@@ -17,7 +17,7 @@ EntLoader._entDB.get('1431664875225').then(function (doc) {
   return EntLoader._entDB.remove(doc);
 });
 */
-EntMessage.genEnforceFromID('123').then(function(ent1) {
+Ent.genEnforceFromID('123').then(function(ent1) {
 	console.log(ent1);
 	//ent1.save().then(function(id) {console.log(ent1.getID());});
 });
