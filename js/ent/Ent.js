@@ -13,6 +13,52 @@ var Ent = {
   		}
   	},
   	
+  	genFromIDs: function(ids) {
+  		var ents = {};
+  		var fetching_list = {};
+  		var callback = null;
+  		for (var key in ids) {
+    		if (!ids.hasOwnProperty(key) || !ids[key]) {
+      			continue;
+    		}
+    
+    		var id = ids[key];
+    		if (typeof(id) !== 'string') {
+    			ents[id] = null;
+    			continue;
+    		}
+    			
+    		if (typeof(Ent._entCache[id]) !== 'undefined') {
+ 				ents[id] = Ent._entCache[id];
+ 				continue;
+			}
+			fetching_list[id] = true;
+			
+			(function() {
+				var ent_id = id;
+				Ent.genNewNullableFromID(ent_id).then(function(ent) {
+				 	Ent._entCache[ent_id] = ent;
+			 		ents[ent_id] = ent;
+			 	
+					delete fetching_list[ent_id];
+				 	if ($.isEmptyObject(fetching_list) && callback) {
+						callback(ents);
+		 			}
+				});
+			}());
+		}
+
+ 		return {
+ 			then: function(fn) {
+ 				if ($.isEmptyObject(fetching_list)) {
+ 					fn(ents);
+ 				} else {
+ 					callback = fn;
+ 				}
+ 			}
+ 		};
+  	},
+  	
 	genNullableFromID: function(id) {
 		if (!id || typeof(id) !== 'string') {
 			return {
@@ -223,6 +269,56 @@ var Ent = {
   		
   		var entStaticClass = {
   		
+		  	genFromIDs: function(ids) {
+  				var ents = {};
+  				var fetching_list = {};
+  				var callback = null;
+  				for (var key in ids) {
+    				if (!ids.hasOwnProperty(key) || !ids[key]) {
+      					continue;
+    				}
+    
+   			 		var id = ids[key];
+    				if (typeof(id) !== 'string') {
+    					ents[id] = null;
+    					continue;
+    				}
+    			
+    				if (typeof(Ent._entCache[id]) !== 'undefined') {
+    					if (Ent._entCache[id].getEntType() === entType) {
+ 							ents[id] = Ent._entCache[id];
+ 						} else {
+ 							ents[id] = null;
+ 						}
+ 						continue;
+					}
+					fetching_list[id] = true;
+			
+					((function() {
+						var ent_id = id;
+						this.genNewNullableFromID(ent_id).then(function(ent) {
+				 			Ent._entCache[ent_id] = ent;
+			 				ents[ent_id] = ent;
+			 	
+							delete fetching_list[ent_id];
+						 	if ($.isEmptyObject(fetching_list) && callback) {
+								callback(ents);
+		 					}
+						});
+					}.bind(this))());
+				}
+	
+ 				return {
+ 					then: function(fn) {
+ 						if ($.isEmptyObject(fetching_list)) {
+ 							fn(ents);
+ 						} else {
+ 							callback = fn;
+ 						}
+ 					}
+ 				};
+ 		 	},
+  	
 		 	genNullableFromID: function(id) {
 		 		if (!id || typeof(id) !== 'string') {
 		 			return {
@@ -233,11 +329,19 @@ var Ent = {
 		 		}
 		 		
 		 		if (typeof(Ent._entCache[id]) !== 'undefined') {
- 					return {
- 						then: function(fn) {
- 							fn(Ent._entCache[id]);
- 						}
- 					};
+		 			if (Ent._entCache[id].getEntType() === entType) {
+	 					return {
+ 							then: function(fn) {
+ 								fn(Ent._entCache[id]);
+ 							}
+ 						};
+ 					} else {
+			 			return {
+ 							then: function(fn) {
+ 								fn(null);
+ 							}
+ 						};
+ 					}
 		 		}
 		 		
 		 		var callback = null;
