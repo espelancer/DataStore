@@ -172,3 +172,5 @@ var Assoc = {
 		});
 	},
 };
+
+Assoc._assocDB.query('assocIndex/byKey', {limit: 0});

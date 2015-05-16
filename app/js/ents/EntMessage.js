@@ -5,6 +5,7 @@ var EntMessage = Ent.create(
  	{
     	_data: {'Body' : ''},
     	_cachedFunction: {'getAssocs': true},
+    	_searchFields: ['Body'],
     	getAssocs: function() {
     		return new Promise(function (fulfill, reject) {
     			Assoc.getAll(this.getID(), 'm2m').then(function(ents) {
@@ -16,7 +17,7 @@ var EntMessage = Ent.create(
     	},
   	}
 );
-
+/*
 EntMessage.genEnforceFromID('123').then(function(ent) {
 	return ent.getAssocs('234','235');
 }).then(function(ents) {
@@ -26,4 +27,8 @@ EntMessage.genEnforceFromID('123').then(function(ent) {
 	}).then(function(ents) {
 		console.log(ents);
 	});
+});*/
+
+EntMessage.search('test').then(function(ids) {
+	console.log(ids);
 });

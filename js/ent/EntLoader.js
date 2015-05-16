@@ -71,4 +71,27 @@ var EntLoader = {
 			});
 		});
 	},
+	
+	search: function(query, fields) {
+		return new Promise(function (fulfill, reject) {
+			EntLoader._entDB.search({
+			    query: query,
+   				 fields: fields,
+   				 include_docs: true,
+			}).then(function (res) {
+				var ids = {};
+  				for (var key in res.rows) {
+  					if (!res.rows.hasOwnProperty(key)) {
+  						continue;
+  					}
+  					var item = res.rows[key].doc;
+  					if (!ids[item.entType]) {
+  						ids[item.entType] = [];
+  					}
+  					ids[item.entType].push(item._id);
+  				}
+  				fulfill(ids);
+			});
+		});
+	},
 };

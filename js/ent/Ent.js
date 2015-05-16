@@ -93,9 +93,15 @@ var Ent = {
 		}
 		
 		var cachedFN = entData._cachedFunction;
+		var searchFields = entData._searchFields;
 		delete entData._cachedFunction;
+		delete entData._searchFields
+		
 		if (typeof(cachedFN) !== 'object') {
 			cachedFN = {};
+		}
+		if (typeof(searchFields) !== 'object') {
+			searchFields = [];
 		}
 		
   		var entClass = function(id) {
@@ -288,6 +294,26 @@ var Ent = {
 			 			fulfill(ent);
 		 			});
  				}.bind(this));
+  			},
+  			
+  			search: function(query) {
+  				return new Promise(function (fulfill, reject) {
+  					if ($.isEmptyObject(searchFields)) {
+  						fulfill([]);
+  						return;
+  					}
+  					EntLoader.search(query, searchFields).then(function(idMap) {
+						var res = idMap[entType];
+						if (typeof(res) !== 'object') {
+							res = [];
+						}
+						console.log(res);
+						GSPromiseExtension.genv(res.map(this.genNullableFromID, this))
+						.then(function(ents) {
+							fulfill(ents);
+						});
+					}.bind(this));
+  				}.bind(this));
   			}
   		};
     	return entStaticClass;
