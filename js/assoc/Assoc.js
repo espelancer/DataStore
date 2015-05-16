@@ -171,20 +171,4 @@ var Assoc = {
 			});
 		});
 	},
-};/*
-Assoc._assocDB.allDocs({
-  				startkey: 'm2m#123#', 
-  				endkey: 'm2m#123#\uffff', 
-  				include_docs: true
-			}).then(function (res) {
-				console.log(res);
-			});
-
-Assoc._assocDB.query('assocIndex/byKey', {stale: 'update_after'}).then(function(res) {
-	console.log(res);
-});*/
-// save index
-/*
-Assoc._assocDB.put(Assoc._assocIndex).then(function(res) {
-	Assoc._assocDB.query('assocIndex/byKey', {stale: 'update_after'});
-});*/
+};
