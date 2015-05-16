@@ -92,10 +92,42 @@ var Ent = {
 			Ent._validLoader(entLoader);
 		}
 		
+		var cachedFN = entData._cachedFunction;
+		delete entData._cachedFunction;
+		if (typeof(cachedFN) !== 'object') {
+			cachedFN = {};
+		}
+		
   		var entClass = function(id) {
+  			this._fnCache = {};
 			for (var key in entData) {
 				if (entData.hasOwnProperty(key)) {
-					this[key] = entData[key];
+					if (typeof(entData[key]) === 'function' && cachedFN[key]) {
+						(function() {
+							var fn_key = key;
+							this[fn_key] = function() {
+								var pass_args = arguments;
+								return new Promise(function (fulfill, reject) {
+									entData[fn_key].apply(this, pass_args)
+									.then(function(res) {
+										var cache_key = 
+											'' + fn_key + '(' + [].join.call(pass_args);
+										if (typeof(this._fnCache[cache_key]) 
+											!== 'undefined') {
+											fulfill(res);
+											return;
+										}
+										this._fnCache[cache_key] = res;
+										fulfill(res);
+									}.bind(this)).catch(function(err) {
+										reject(err);
+									});
+								}.bind(this));
+							}.bind(this);
+						}.bind(this)());
+					} else {
+						this[key] = entData[key];
+					}
 				}
 			}
 			
