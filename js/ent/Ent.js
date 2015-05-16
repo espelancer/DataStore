@@ -14,180 +14,90 @@ var Ent = {
   	},
   	
   	genFromIDs: function(ids) {
-  		var ents = {};
-  		var fetching_list = {};
-  		var callback = null;
-  		for (var key in ids) {
-    		if (!ids.hasOwnProperty(key) || !ids[key]) {
-      			continue;
-    		}
-    
-    		var id = ids[key];
-    		if (typeof(id) !== 'string') {
-    			ents[id] = null;
-    			continue;
-    		}
-    			
-    		if (typeof(Ent._entCache[id]) !== 'undefined') {
- 				ents[id] = Ent._entCache[id];
- 				continue;
-			}
-			fetching_list[id] = true;
-			
-			(function() {
-				var ent_id = id;
-				Ent.genNewNullableFromID(ent_id).then(function(ent) {
-				 	Ent._entCache[ent_id] = ent;
-			 		ents[ent_id] = ent;
-			 	
-					delete fetching_list[ent_id];
-				 	if ($.isEmptyObject(fetching_list) && callback) {
-						callback(ents);
-		 			}
-				});
-			}());
-		}
+  		return (function () {
+			var accumulator = {};
+			var ready = Promise.resolve(null);
 
- 		return {
- 			then: function(fn) {
- 				if ($.isEmptyObject(fetching_list)) {
- 					fn(ents);
- 				} else {
- 					callback = fn;
- 				}
- 			}
- 		};
+			ids.forEach(function (id) {
+				ready = ready.then(function () {
+					return Ent.genNullableFromID(id);
+				}).then(function (value) {
+					accumulator[id] = value;
+				});
+			});
+
+			return ready.then(function () { return accumulator; });
+		}());
   	},
   	
 	genNullableFromID: function(id) {
-		if (!id || typeof(id) !== 'string') {
-			return {
- 				then: function(fn) {
- 					fn(null);
- 				}
- 			};
- 		}
+		return new Promise(function (fulfill, reject) {
+			if (!id || typeof(id) !== 'string') {
+				fulfill(null);
+				return;
+	 		}
 		 		
-		if (typeof(Ent._entCache[id]) !== 'undefined') {
- 			return {
- 				then: function(fn) {
- 					fn(Ent._entCache[id]);
- 				}
- 			};
-		}
-		 		
-		var callback = null;
- 		var res;
-		Ent.genNewNullableFromID(id).then(function(ent) {
-		 	Ent._entCache[id] = ent;
-			if (callback) {
-		 		callback(ent);
-		 	} else {
-				res = ent;
+			if (typeof(Ent._entCache[id]) !== 'undefined') {
+ 				fulfill(Ent._entCache[id]);
+ 				return;
 			}
-		});
 		 		
- 		return {
- 			then: function(fn) {
- 				if (typeof(res) !== 'undefined') {
- 					fn(res);
- 				} else {
- 					callback = fn;
- 				}
- 			}
- 		};
+			Ent.genNewNullableFromID(id).then(function(ent) {
+			 	Ent._entCache[id] = ent;
+			 	fulfill(ent);
+			});
+		});
  	},
 		 	
 	genEnforceFromID: function(id) {
-		if (!id || typeof(id) !== 'string') {
-			throw 'id is required';
-		}
-		 		
-		var callback = null;
-		var res;
-		this.genNullableFromID(id).then(function(ent) {
-		 	if (ent === null) {
-				throw 'Invalid Ent';
+		return new Promise(function (fulfill, reject) {
+			if (!id || typeof(id) !== 'string') {
+				reject('id is required');
 			}
-		 	if (callback) {
-				callback(ent);
-		 	} else {
-				res = ent;
-		 	}
-		});
 		 		
- 		return {
- 			then: function(fn) {
- 				if (typeof(res) !== 'undefined') {
- 					fn(res);
- 				} else {
- 					callback = fn;
- 				}
- 			}
- 		};
+			this.genNullableFromID(id).then(function(ent) {
+			 	if (ent === null) {
+					reject('Invalid Ent');
+				}
+				fulfill(ent);
+			});
+ 		}.bind(this));
 	},
 		 	
   	genNewNullableFromID: function(id) {
-		var callback = null;
-		var res;
-		EntLoader.load(id).then(function(doc) {
-			var entType = doc.entType;
-			if (!Ent._entClassMap[entType]) {
-				if (callback) {
-					callback(null);
-				} else {
-					res = null;
+		return new Promise(function (fulfill, reject) {
+			EntLoader.load(id).then(function(doc) {
+				var entType = doc.entType;
+				if (!Ent._entClassMap[entType]) {
+					fulfill(null);
+					return;
 				}
-				return;
-			}
-			delete doc.entType;
-			window[entType].genNullableFromData(doc, id).then(function(ent) {
-				if (callback) {
-					callback(ent);
-				} else {
-					res = ent;
-				}
-			});
-		}.bind(this));
-		 		
- 		return {
- 			then: function(fn) {
- 				if (typeof(res) !== 'undefined') {
- 					fn(res);
- 				} else {
- 					callback = fn;
- 				}
- 			}
- 		};
+				
+				delete doc.entType;
+				window[entType].genNullableFromData(doc, id).then(function(ent) {
+					fulfill(ent);
+				});
+			}).catch(function(err) {
+				fulfill(null);
+			});;
+		});
  	},
 		 	
 	genNewEnforceFromID: function(id) {
-		if (!id || typeof(id) !== 'string') {
-			throw 'id is required';
-		}
-		 		
-		var callback = null;
-		var res;
-		Ent.genNewNullableFromID(id).then(function(ent) {
-			if (ent === null) {
-		 		throw 'Invalid Ent';
-		 	}
-			if (callback) {
-		 		callback(ent);
-			} else {
-		 		res = ent;
+		return new Promise(function (fulfill, reject) {
+			if (!id || typeof(id) !== 'string') {
+				reject('id is required');
+				return;
 			}
+			
+			Ent.genNewNullableFromID(id).then(function(ent) {
+				if (ent === null) {
+			 		reject('Invalid Ent');
+			 		return;
+			 	}
+		 		fulfill(ent);
+			});
 		});
-		 		
- 		return {
- 			then: function(fn) {
- 				if (typeof(res) !== 'undefined') {
- 					fn(res);
-				} else {
- 					callback = fn;
- 				}
- 			}
- 		};
 	},
       
   	create: function(entType, entData, entLoader) {
@@ -229,39 +139,26 @@ var Ent = {
   			}
   			if (typeof(this.save) !== 'function') {
   				this.save = function() {
-		 			var callback = null;
-		 			var res;
-  					if (EntLoader.isTempEnt(id)) {
-  						entLoader.save(null, entType, this._data)
-  						.then(function(saved_id) {
-  							this.getID = function() { return saved_id; };
-  							this.isTempEnt = function() { return false; };
-  							Ent._entCache[saved_id] = this;
-  							if (callback) {
-  								callback(saved_id);
-  							} else {
-  								res = saved_id;
-  							}
-  						}.bind(this));
-  					} else {
-  						entLoader.save(id, entType, this._data).then(function(saved_id) {
-  							if (callback) {
-  								callback(saved_id);
-  							} else {
-  								res = saved_id;
-  							}
-  						});
-  					}
-  					
-  					return {
- 						then: function(fn) {
- 							if (typeof(res) !== 'undefined') {
- 								fn(res);
- 							} else {
- 								callback = fn;
- 							}
- 						}
- 					};
+  					return new Promise(function (fulfill, reject) {
+	  					if (EntLoader.isTempEnt(id)) {
+  							entLoader.save(null, entType, this._data)
+  							.then(function(saved_id) {
+  								this.getID = function() { return saved_id; };
+  								this.isTempEnt = function() { return false; };
+  								Ent._entCache[saved_id] = this;
+  								fulfill(saved_id);
+  							}.bind(this)).catch(function(err) {
+  								reject(err);
+  							});
+  						} else {
+  							entLoader.save(id, entType, this._data)
+  							.then(function(saved_id) {
+  								fulfill(saved_id);
+	  						}).catch(function(err) {
+  								reject(err);
+  							});;
+  						}
+  					}.bind(this));
   				};
   			}
   		};
@@ -270,247 +167,131 @@ var Ent = {
   		var entStaticClass = {
   		
 		  	genFromIDs: function(ids) {
-  				var ents = {};
-  				var fetching_list = {};
-  				var callback = null;
-  				for (var key in ids) {
-    				if (!ids.hasOwnProperty(key) || !ids[key]) {
-      					continue;
-    				}
-    
-   			 		var id = ids[key];
-    				if (typeof(id) !== 'string') {
-    					ents[id] = null;
-    					continue;
-    				}
-    			
-    				if (typeof(Ent._entCache[id]) !== 'undefined') {
-    					if (Ent._entCache[id].getEntType() === entType) {
- 							ents[id] = Ent._entCache[id];
- 						} else {
- 							ents[id] = null;
- 						}
- 						continue;
-					}
-					fetching_list[id] = true;
-			
-					((function() {
-						var ent_id = id;
-						this.genNewNullableFromID(ent_id).then(function(ent) {
-				 			Ent._entCache[ent_id] = ent;
-			 				ents[ent_id] = ent;
-			 	
-							delete fetching_list[ent_id];
-						 	if ($.isEmptyObject(fetching_list) && callback) {
-								callback(ents);
-		 					}
+		  		return ((function () {
+					var accumulator = {};
+					var ready = Promise.resolve(null);
+
+					ids.forEach(function (id) {
+						ready = ready.then(function () {
+							return this.genNullableFromID(id);
+						}.bind(this)).then(function (value) {
+							accumulator[id] = value;
 						});
-					}.bind(this))());
-				}
-	
- 				return {
- 					then: function(fn) {
- 						if ($.isEmptyObject(fetching_list)) {
- 							fn(ents);
- 						} else {
- 							callback = fn;
- 						}
- 					}
- 				};
+					}.bind(this));
+
+					return ready.then(function () { return accumulator; });
+				}.bind(this))());
  		 	},
   	
 		 	genNullableFromID: function(id) {
-		 		if (!id || typeof(id) !== 'string') {
-		 			return {
- 						then: function(fn) {
- 							fn(null);
+		 		return new Promise(function (fulfill, reject) {
+		 			if (!id || typeof(id) !== 'string') {
+		 				fulfill(null);
+		 				return;
+			 		}
+		 		
+			 		if (typeof(Ent._entCache[id]) !== 'undefined') {
+			 			if (Ent._entCache[id].getEntType() === entType) {
+			 				fulfill(Ent._entCache[id]);
+	 					} else {
+	 						fulfill(null);
  						}
- 					};
-		 		}
-		 		
-		 		if (typeof(Ent._entCache[id]) !== 'undefined') {
-		 			if (Ent._entCache[id].getEntType() === entType) {
-	 					return {
- 							then: function(fn) {
- 								fn(Ent._entCache[id]);
- 							}
- 						};
- 					} else {
-			 			return {
- 							then: function(fn) {
- 								fn(null);
- 							}
- 						};
+ 						return;
  					}
-		 		}
 		 		
-		 		var callback = null;
-		 		var res;
-		 		this.genNewNullableFromID(id).then(function(ent) {
-		 			Ent._entCache[id] = ent;
-		 			if (callback) {
-		 				callback(ent);
-		 			} else {
-		 				res = ent;
-		 			}
-		 		});
-		 		
- 				return {
- 					then: function(fn) {
- 						if (typeof(res) !== 'undefined') {
- 							fn(res);
- 						} else {
- 							callback = fn;
- 						}
- 					}
- 				};
+		 			this.genNewNullableFromID(id).then(function(ent) {
+		 				Ent._entCache[id] = ent;
+		 				fulfill(ent);
+			 		});
+ 				}.bind(this));
 		 	},
 		 	
 		 	genEnforceFromID: function(id) {
-		 		if (!id || typeof(id) !== 'string') {
-		 			throw 'id is required';
-		 		}
-		 		
-		 		var callback = null;
-		 		var res;
-		 		this.genNullableFromID(id).then(function(ent) {
-		 			if (ent === null) {
-		 				throw 'Invalid Ent';
+		 		return new Promise(function (fulfill, reject) {
+		 			if (!id || typeof(id) !== 'string') {
+		 				reject('id is required');
+		 				return;
 		 			}
-		 			if (callback) {
-		 				callback(ent);
-		 			} else {
-		 				res = ent;
-		 			}
-		 		});
 		 		
- 				return {
- 					then: function(fn) {
- 						if (typeof(res) !== 'undefined') {
- 							fn(res);
- 						} else {
- 							callback = fn;
- 						}
- 					}
- 				};
+		 			this.genNullableFromID(id).then(function(ent) {
+		 				if (ent === null) {
+		 					reject('Invalid Ent');
+		 					return;
+		 				}
+		 				fulfill(ent);
+			 		});
+ 				}.bind(this));
 		 	},
 		 	
 		 	genNewNullableFromID: function(id) {
-				if (!Ent._entClassMap[entType]) {
-					return {
- 						then: function(fn) {
- 							fn(null);
- 						}
- 					};
-				}
+		 		return new Promise(function (fulfill, reject) {
+					if (!Ent._entClassMap[entType]) {
+						fulfill(null);
+						return;
+					}
 		 		
-		 		var callback = null;
-		 		var res;
-				entLoader.loadGivenType(id, entType).then(function(data) {
-					this.genNullableFromData(data, id).then(function(ent) {
-						if (callback) {
-							callback(ent);
-						} else {
-							res = ent;
-						}
+					entLoader.loadGivenType(id, entType).then(function(data) {
+						this.genNullableFromData(data, id).then(function(ent) {
+							fulfill(ent);
+						});
+					}.bind(this)).catch(function(err) {
+						fulfill(null);
 					});
-				}.bind(this));
-		 		
- 				return {
- 					then: function(fn) {
- 						if (typeof(res) !== 'undefined') {
- 							fn(res);
- 						} else {
- 							callback = fn;
- 						}
- 					}
- 				};
+ 				}.bind(this));
  			},
 		 	
 		 	genNewEnforceFromID: function(id) {
-		 		if (!id || typeof(id) !== 'string') {
-		 			throw 'id is required';
-		 		}
-		 		
-		 		var callback = null;
-		 		var res;
-		 		this.genNewNullableFromID(id).then(function(ent) {
-		 			if (ent === null) {
-		 				throw 'Invalid Ent';
+		 		return new Promise(function (fulfill, reject) {
+		 			if (!id || typeof(id) !== 'string') {
+		 				reject('id is required');
+		 				return;
 		 			}
-		 			if (callback) {
-		 				callback(ent);
-		 			} else {
-		 				res = ent;
-		 			}
-		 		});
 		 		
- 				return {
- 					then: function(fn) {
- 						if (typeof(res) !== 'undefined') {
- 							fn(res);
- 						} else {
- 							callback = fn;
- 						}
- 					}
- 				};
+			 		this.genNewNullableFromID(id).then(function(ent) {
+			 			if (ent === null) {
+			 				reject('Invalid Ent');
+			 				return;
+		 				}
+		 				fulfill(ent);
+			 		});
+		 		}.bind(this));
 		 	},
       
   			genNullableFromData: function(data, id) {
-				if (!Ent._entClassMap[entType] || data === null) {
- 			 		return {
- 						then: function(fn) {
- 							fn(null);
- 						}
- 					};
-				}
-				if (!id) {
-				  id = 'tmp#' + Ent._tmpID;
-				  Ent._tmpID++;
-				}
- 				var ent = new Ent._entClassMap[entType](id);
- 				ent._data = data;
- 				if (!ent.canSee()) {
- 			 		return {
- 						then: function(fn) {
- 							fn(null);
- 						}
- 					};
- 				}
- 				
- 				return {
- 					then: function(fn) {
- 						fn(ent);
+  				return new Promise(function (fulfill, reject) {
+					if (!Ent._entClassMap[entType] || data === null) {
+						fulfill(null);
+						return;
+					}
+					if (!id) {
+					  id = 'tmp#' + Ent._tmpID;
+					  Ent._tmpID++;
+					}
+ 					var ent = new Ent._entClassMap[entType](id);
+ 					ent._data = data;
+ 					if (!ent.canSee()) {
+ 						fulfill(null);
+ 						return;
  					}
- 				};
+ 					fulfill(ent);
+ 				});
   			},
       
   			genEnforceFromData: function(data) {
-				if (!Ent._entClassMap[entType]) {
-					throw 'entType doen\'t exist';
-				}
+  				return new Promise(function (fulfill, reject) {
+					if (!Ent._entClassMap[entType]) {
+						reject('entType doen\'t exist');
+						return;
+					}
 				
-				var callback = null;
-				var res;
-		 		this.genNullableFromData(data).then(function(ent) {
-		 			if (ent === null) {
-		 				throw 'Invalid Ent';
-		 			}
-		 			if (callback) {
-		 				callback(ent);
-		 			} else {
-		 				res = ent;
-		 			}
-		 		});
- 				return {
- 					then: function(fn) {
- 						if (typeof(res) !== 'undefined') {
- 							fn(res);
- 						} else {
- 							callback = fn;
- 						}
- 					}
- 				};
+		 			this.genNullableFromData(data).then(function(ent) {
+		 				if (ent === null) {
+		 					reject('Invalid Ent');
+		 					return;
+			 			}
+			 			fulfill(ent);
+		 			});
+ 				}.bind(this));
   			}
   		};
     	return entStaticClass;
