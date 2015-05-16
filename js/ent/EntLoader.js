@@ -14,8 +14,7 @@ var EntLoader = {
 				if (doc.entType !== entType) {
 					reject('Invalid EntType');
 				} else {
-					delete doc.entType;
-					fulfill(doc);
+					fulfill(doc.ent);
 				}
 			}).catch(function(err) {
 				reject(err);
@@ -26,9 +25,11 @@ var EntLoader = {
 	load: function(id) {
 		return new Promise(function (fulfill, reject) {
 			EntLoader._entDB.get(id).then(function (doc) {
+				var type = doc.entType;
 				delete doc._rev;
 				delete doc._id;
-				fulfill(doc);
+				delete doc.entType;
+				fulfill({'ent': doc, 'entType': type});
 			}).catch(function (err) {
 				reject(err);
 			});

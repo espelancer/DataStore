@@ -50,14 +50,12 @@ var Ent = {
   	genNewNullableFromID: function(id) {
 		return new Promise(function (fulfill, reject) {
 			EntLoader.load(id).then(function(doc) {
-				var entType = doc.entType;
-				if (!Ent._entClassMap[entType]) {
+				if (!Ent._entClassMap[doc.entType]) {
 					fulfill(null);
 					return;
 				}
 				
-				delete doc.entType;
-				window[entType].genNullableFromData(doc, id).then(function(ent) {
+				window[doc.entType].genNullableFromData(doc.ent, id).then(function(ent) {
 					fulfill(ent);
 				});
 			}).catch(function(err) {

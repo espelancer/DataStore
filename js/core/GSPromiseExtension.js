@@ -1,6 +1,6 @@
 'use strict';
 
-var GSPromiseExtend = {
+var GSPromiseExtension = {
 
   	genm: function(promises) {
   		return (function () {
