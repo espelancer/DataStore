@@ -6,13 +6,11 @@ var EntMessage = Ent.create(
     	_data: {'Body' : ''},
   	}
 );
-/*
-EntMessage.genEnforceFromData({'Body' : '123 test'}).then(function(ent) {
-	console.log(ent);
-	//ent.setBody('test data');
-	ent.save().then(function(id) {
-		console.log(id);
-	});
+
+GSPromiseExtend.genm(
+	{'123' : Ent.genEnforceFromID('123'), '1234': Ent.genEnforceFromID('1234')}
+).then(function(ents) {
+	console.log(ents);
 }).catch(function(err) {
 	console.log('err', err);
-});*/
+});

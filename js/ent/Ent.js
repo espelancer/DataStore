@@ -13,23 +13,6 @@ var Ent = {
   		}
   	},
   	
-  	genFromIDs: function(ids) {
-  		return (function () {
-			var accumulator = {};
-			var ready = Promise.resolve(null);
-
-			ids.forEach(function (id) {
-				ready = ready.then(function () {
-					return Ent.genNullableFromID(id);
-				}).then(function (value) {
-					accumulator[id] = value;
-				});
-			});
-
-			return ready.then(function () { return accumulator; });
-		}());
-  	},
-  	
 	genNullableFromID: function(id) {
 		return new Promise(function (fulfill, reject) {
 			if (!id || typeof(id) !== 'string') {
@@ -165,23 +148,6 @@ var Ent = {
   		Ent._entClassMap[entType] = entClass;
   		
   		var entStaticClass = {
-  		
-		  	genFromIDs: function(ids) {
-		  		return ((function () {
-					var accumulator = {};
-					var ready = Promise.resolve(null);
-
-					ids.forEach(function (id) {
-						ready = ready.then(function () {
-							return this.genNullableFromID(id);
-						}.bind(this)).then(function (value) {
-							accumulator[id] = value;
-						});
-					}.bind(this));
-
-					return ready.then(function () { return accumulator; });
-				}.bind(this))());
- 		 	},
   	
 		 	genNullableFromID: function(id) {
 		 		return new Promise(function (fulfill, reject) {
