@@ -66,14 +66,13 @@ var SearchEngine = {
 		var docIndex = '_design/' + entType;
 		return new Promise(function (fulfill, reject) {
 			SearchEngine._searchIndexDB.get(docIndex).then(function (doc) {
-			/*
 				fulfill(true);
 			}).catch(function(err) {
 				if (err.name !== 'not_found') {
 					reject('save fail');
 					return;
 				}
-				*/
+				
 				var views = {};
 				for (var key in fields) {
   					if (!fields.hasOwnProperty(key)) {
