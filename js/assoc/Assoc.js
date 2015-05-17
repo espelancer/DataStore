@@ -8,7 +8,7 @@ var Assoc = {
   		_id: '_design/assocIndex',
   		views: {
     		byKey: {
-      			map: function (doc) { emit(doc.keyIndex); }.toString()
+      			map: (function (doc) { emit(doc.keyIndex); }).toString()
     		}
   		}
 	},
@@ -173,4 +173,11 @@ var Assoc = {
 	},
 };
 
-Assoc._assocDB.query('assocIndex/byKey', {limit: 0});
+Assoc._assocDB.get('assocIndex/byKey').catch(function(err) {
+	if (err.name !== 'not_found') {
+		return;
+	}
+	Assoc._assocDB.put('assocIndex/byKey').then(function () {
+		Assoc._assocDB.query('assocIndex/byKey', {limit: 0});
+	}).catch(function() {});
+});

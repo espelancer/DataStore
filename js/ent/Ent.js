@@ -165,6 +165,10 @@ var Ent = {
   								this.getID = function() { return saved_id; };
   								this.isTempEnt = function() { return false; };
   								Ent._entCache[saved_id] = this;
+  								
+  								if (!$.isEmptyObject(searchFields)) {
+  									SearchEngine.save(this, searchFields);
+  								}
   								fulfill(saved_id);
   							}.bind(this)).catch(function(err) {
   								reject(err);
@@ -172,8 +176,11 @@ var Ent = {
   						} else {
   							entLoader.save(id, entType, this._data)
   							.then(function(saved_id) {
+  								if (!$.isEmptyObject(searchFields)) {
+  									SearchEngine.save(this, searchFields);
+  								}
   								fulfill(saved_id);
-	  						}).catch(function(err) {
+	  						}.bind(this)).catch(function(err) {
   								reject(err);
   							});;
   						}
@@ -302,12 +309,11 @@ var Ent = {
   						fulfill([]);
   						return;
   					}
-  					EntLoader.search(query, searchFields).then(function(idMap) {
-						var res = idMap[entType];
+  					SearchEngine.search(query, searchFields, entType)
+  					.then(function(res) {
 						if (typeof(res) !== 'object') {
 							res = [];
 						}
-						console.log(res);
 						GSPromiseExtension.genv(res.map(this.genNullableFromID, this))
 						.then(function(ents) {
 							fulfill(ents);
@@ -316,6 +322,33 @@ var Ent = {
   				}.bind(this));
   			}
   		};
-    	return entStaticClass;
+  		
+  		if (!$.isEmptyObject(searchFields)) {
+  			SearchEngine.buildIndex(searchFields, entType).catch(function() {});
+  		}
+  		for (var keySearch in searchFields) {
+  			if (!searchFields.hasOwnProperty(keySearch)) {
+  				continue;
+  			}
+  			(function() {
+  				var index = searchFields[keySearch];
+  				entStaticClass['search' + index] = function(query) {
+  					return new Promise(function (fulfill, reject) {
+	  					SearchEngine.searchIndex(query, index, entType)
+  						.then(function(res) {
+							if (typeof(res) !== 'object') {
+								res = [];
+							}
+							GSPromiseExtension.genv(res.map(this.genNullableFromID, this))
+							.then(function(ents) {
+								fulfill(ents);
+							});
+						}.bind(this));
+  					}.bind(this));
+  				}.bind(this);
+  			}.bind(this)());
+  		}
+  		
+    	window[entType] = entStaticClass;
   	},
 };

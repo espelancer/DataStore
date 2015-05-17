@@ -1,11 +1,14 @@
 'use strict';
 
-var EntMessage = Ent.create(
+Ent.create(
   	'EntMessage',
  	{
     	_data: {'Body' : ''},
     	_cachedFunction: {'getAssocs': true},
-    	_searchFields: ['Body'],
+    	_searchFields: ['Body', 'Title'],
+    	getTitle: function() {
+    		return 'title ' + this.getBody();
+    	},
     	getAssocs: function() {
     		return new Promise(function (fulfill, reject) {
     			Assoc.getAll(this.getID(), 'm2m').then(function(ents) {
@@ -19,6 +22,18 @@ var EntMessage = Ent.create(
 );
 /*
 EntMessage.genEnforceFromID('123').then(function(ent) {
+	return ent.save();
+});
+
+EntMessage.genEnforceFromID('1234').then(function(ent) {
+	return ent.save();
+});
+*//*
+EntMessage.genEnforceFromData({}).then(function(ent) {
+	return ent.save();
+});
+/*
+EntMessage.genEnforceFromID('123').then(function(ent) {
 	return ent.getAssocs('234','235');
 }).then(function(ents) {
 	console.log(ents);
@@ -29,6 +44,6 @@ EntMessage.genEnforceFromID('123').then(function(ent) {
 	});
 });*/
 
-EntMessage.search('test').then(function(ids) {
-	console.log(ids);
+EntMessage.searchBody('test body').then(function(ents) {
+	console.log(ents);
 });
