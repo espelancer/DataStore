@@ -80,6 +80,103 @@ var Ent = {
 			});
 		});
 	},
+	
+	hasInterface: function(entType, interfaceType) {
+		if (!window[entType] || !window[entType]._interfaces) {
+			return false;
+		}
+		for (var key in window[entType]._interfaces) {
+			if (key === interfaceType || Ent.hasInterface(key, interfaceType)) {
+				return true;
+			}
+		}
+		return false;
+	},
+	
+	createInterface: function(entType, entData) {
+		var entStaticClass = {
+		
+  			_interfaces: entData._interfaces ? entData._interfaces : {},
+  	
+		 	genNullableFromID: function(id) {
+		 		return new Promise(function (fulfill, reject) {
+		 			if (!id || typeof(id) !== 'string') {
+		 				fulfill(null);
+		 				return;
+			 		}
+		 		
+			 		if (typeof(Ent._entCache[id]) !== 'undefined') {
+			 			if (Ent._entCache[id].getEntType() === entType || 
+			 				Ent.hasInterface(Ent._entCache[id].getEntType(), entType)) {
+			 				fulfill(Ent._entCache[id]);
+	 					} else {
+	 						fulfill(null);
+ 						}
+ 						return;
+ 					}
+		 		
+		 			this.genNewNullableFromID(id).then(function(ent) {
+		 				Ent._entCache[id] = ent;
+		 				fulfill(ent);
+			 		});
+ 				}.bind(this));
+		 	},
+		 	
+		 	genEnforceFromID: function(id) {
+		 		return new Promise(function (fulfill, reject) {
+		 			if (!id || typeof(id) !== 'string') {
+		 				reject('id is required');
+		 				return;
+		 			}
+		 		
+		 			this.genNullableFromID(id).then(function(ent) {
+		 				if (ent === null) {
+		 					reject('Invalid Ent');
+		 					return;
+		 				}
+		 				fulfill(ent);
+			 		});
+ 				}.bind(this));
+		 	},
+		 	
+		 	genNewNullableFromID: function(id) {
+		 		return new Promise(function (fulfill, reject) {
+					EntLoader.load(id).then(function(data) {
+						if (!window[data.entType] ||
+							!Ent._entClassMap[data.entType] ||
+							!Ent.hasInterface(data.entType, entType)) {
+							fulfill(null);
+						}
+						window[data.entType].genNullableFromData(data.ent, id)
+						.then(function(ent) {
+							fulfill(ent);
+						});
+					}.bind(this)).catch(function(err) {
+						fulfill(null);
+					});
+ 				}.bind(this));
+ 			},
+		 	
+		 	genNewEnforceFromID: function(id) {
+		 		return new Promise(function (fulfill, reject) {
+		 			if (!id || typeof(id) !== 'string') {
+		 				reject('id is required');
+		 				return;
+		 			}
+		 		
+			 		this.genNewNullableFromID(id).then(function(ent) {
+			 			if (ent === null) {
+			 				reject('Invalid Ent');
+			 				return;
+		 				}
+		 				fulfill(ent);
+			 		});
+		 		}.bind(this));
+		 	},
+  		};
+  		
+		window[entType] = entStaticClass;
+	},
       
   	create: function(entType, entData, entLoader) {
 		if (!entType) {
@@ -191,6 +288,8 @@ var Ent = {
   		Ent._entClassMap[entType] = entClass;
   		
   		var entStaticClass = {
+  		
+  			_interfaces: entData._interfaces ? entData._interfaces : {},
   	
 		 	genNullableFromID: function(id) {
 		 		return new Promise(function (fulfill, reject) {

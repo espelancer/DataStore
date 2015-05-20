@@ -14,7 +14,14 @@ var SearchEngine = {
 				if (!searchFields.hasOwnProperty(key)) {
 					continue;
 				}
-				newObject[searchFields[key]] = ent['get' + searchFields[key]]();
+				if (typeof(ent['get' + searchFields[key]]) === 'function') {
+					newObject[searchFields[key]] = ent['get' + searchFields[key]]();
+				} else if (typeof(ent['gen' + searchFields[key]]) === 'function') {
+					newObject[searchFields[key]] = ent['gen' + searchFields[key]]();
+				} else {
+					reject('index ' + searchFields[key] + ' doesn\'t exist');
+					return;
+				}
 			}
 			
 			SearchEngine._searchIndexDB.get(ent.getID()).then(function (doc) {
@@ -96,7 +103,6 @@ var SearchEngine = {
   					_id: docIndex,
   					views: views,
 				};
-				indexDoc._rev = doc._rev;
 				SearchEngine._searchIndexDB.put(indexDoc).then(function (doc) {
 					fulfill(true);
 				}).catch(function(err) {

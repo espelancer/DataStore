@@ -11,10 +11,10 @@ var EntLoader = {
 	loadGivenType: function(id, entType) {
 		return new Promise(function (fulfill, reject) {
 			EntLoader.load(id).then(function(doc) {
-				if (doc.entType !== entType) {
-					reject('Invalid EntType');
-				} else {
+				if (doc.entType === entType) {
 					fulfill(doc.ent);
+				} else {
+					reject('Invalid EntType');
 				}
 			}).catch(function(err) {
 				reject(err);
