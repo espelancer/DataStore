@@ -93,7 +93,13 @@ var Ent = {
 		return false;
 	},
 	
-	createInterface: function(entType, entData) {
+	createInterface: function(entType, entData, entLoader) {
+		if (typeof(entLoader) !== 'object') {
+			entLoader = EntLoader;
+		} else if (typeof(entLoader.load) !== 'function') {
+			throw 'Invalid loader';
+		}
+		
 		var entStaticClass = {
 		
   			_interfaces: entData._interfaces ? entData._interfaces : {},
@@ -141,7 +147,7 @@ var Ent = {
 		 	
 		 	genNewNullableFromID: function(id) {
 		 		return new Promise(function (fulfill, reject) {
-					EntLoader.load(id).then(function(data) {
+					entLoader.load(id).then(function(data) {
 						if (!window[data.entType] ||
 							!Ent._entClassMap[data.entType] ||
 							!Ent.hasInterface(data.entType, entType)) {

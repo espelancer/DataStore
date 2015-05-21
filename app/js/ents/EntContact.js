@@ -10,8 +10,18 @@ Ent.create(
  		},
     	_data: {
     		Email: '',
-    		UserID: null,
     	},
     	_searchFields: ['Email'],
+    	
+    	addToUser: function(userID) {
+    		return GSPromiseExtension.genm({
+    			'user_to_contact': function() {
+    				Assoc.set(userID, this.getID(), 'ACCOS_USER_TO_ICONTACT');
+    			}.bind(this),
+    			'contact_to_user': function() {
+    				Assoc.set(this.getID(), userID, 'ASSOC_ICONTACT_TO_USER');
+    			}.bind(this),
+    		});
+    	},
   	}
 );

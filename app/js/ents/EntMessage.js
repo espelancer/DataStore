@@ -11,7 +11,6 @@ Ent.create(
     	_data: {
     		Body: '',
     		SenderContactID: null,
-    		ParentThreadID: null,
     	},
     	_searchFields: ['Body'],
     	_cachedFunction: {
@@ -22,6 +21,17 @@ Ent.create(
     		return new Promise(function (fulfill, reject) {
     			fulfill(null);
 			});
+    	},
+    	
+    	addInThread: function(threadID) {
+    		return GSPromiseExtension.genm({
+    			'thread_to_message': function() {
+    				Assoc.set(threadID, this.getID(), 'ACCOS_THREAD_TO_IMESSAGE');
+    			}.bind(this),
+    			'message_to_thread': function() {
+    				Assoc.set(this.getID(), threadID, 'ACCOS_IMESSAGE_TO_THREAD');
+    			}.bind(this),
+    		});
     	},
   	}
 );
