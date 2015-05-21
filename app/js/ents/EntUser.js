@@ -17,6 +17,7 @@ Ent.create(
     		genUserGroups: true,
     		genThreads: true,
     	},
+    	
     	genContacts: function() {
     		return Assoc.getAll(this.getID(), 'ACCOS_USER_TO_ICONTACT');
     	},

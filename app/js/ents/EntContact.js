@@ -12,6 +12,24 @@ Ent.create(
     		Email: '',
     	},
     	_searchFields: ['Email'],
+    	_cachedFunction: {
+    		genUser: true,
+    	},
+    	
+    	genUser: function() {
+    		return new Promise(function (fulfill, reject) {
+    			Assoc.getAll(this.getID(), 'ASSOC_ICONTACT_TO_USER')
+    			.then(function(res) {
+    				if (!res) {
+    					fulfill(null);
+    				} else {
+    					fulfill(head(res));
+    				}
+    			}).catch(function (err) {
+					reject(err);
+				});
+    		});
+    	},
     	
     	addToUser: function(userID) {
     		return GSPromiseExtension.genm({

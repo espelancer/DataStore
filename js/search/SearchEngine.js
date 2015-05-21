@@ -10,6 +10,7 @@ var SearchEngine = {
 				_id: ent.getID(),
 				entType: ent.getEntType(),
 			};
+			var genMap = {};
 			for (var key in searchFields) {
 				if (!searchFields.hasOwnProperty(key)) {
 					continue;
@@ -17,33 +18,68 @@ var SearchEngine = {
 				if (typeof(ent['get' + searchFields[key]]) === 'function') {
 					newObject[searchFields[key]] = ent['get' + searchFields[key]]();
 				} else if (typeof(ent['gen' + searchFields[key]]) === 'function') {
-					newObject[searchFields[key]] = ent['gen' + searchFields[key]]();
+					genMap[searchFields[key]] = ent['gen' + searchFields[key]];
 				} else {
 					reject('index ' + searchFields[key] + ' doesn\'t exist');
 					return;
 				}
 			}
 			
-			SearchEngine._searchIndexDB.get(ent.getID()).then(function (doc) {
-				newObject._rev = doc._rev;
-				if (_.isEqual(newObject, doc)) {
-					fulfill(doc._id);
-					return;
-				}
+			if (!$.isEmptyObject(genMap)) {
+				GSPromiseExtension.genm(genMap).then(function(res) {
+					for (var searchIndex in res) {
+						if (!res.hasOwnedProperty(searchIndex)) {
+							continue;
+						}
+						newObject[searchIndex] = res[searchIndex];
+					}
+					
+					SearchEngine._searchIndexDB.get(ent.getID()).then(function (doc) {
+						newObject._rev = doc._rev;
+						if (_.isEqual(newObject, doc)) {
+							fulfill(doc._id);
+							return;
+						}
 			
-  				return SearchEngine._searchIndexDB.put(newObject).then(function (doc) {
-  					fulfill(doc.id);
-	  			});
-			}).catch(function (err) {
-				if (err.name !== 'not_found') {
-					reject('save fail');
-					return;
-				}
-				// Local save a new Ent with ID
-  				return SearchEngine._searchIndexDB.put(newObject).then(function (doc) {
-  					fulfill(doc.id);
-	  			});
-			});
+		  				return SearchEngine._searchIndexDB.put(newObject)
+		  				.then(function (doc) {
+  							fulfill(doc.id);
+	  					});
+					}).catch(function (err) {
+						if (err.name !== 'not_found') {
+							reject('save fail');
+							return;
+						}
+						// Local save a new Ent with ID
+	  					return SearchEngine._searchIndexDB.put(newObject)
+	  					.then(function (doc) {
+  							fulfill(doc.id);
+	  					});
+					});
+				});
+			} else {
+				SearchEngine._searchIndexDB.get(ent.getID()).then(function (doc) {
+					newObject._rev = doc._rev;
+					if (_.isEqual(newObject, doc)) {
+						fulfill(doc._id);
+						return;
+					}
+			
+	  				return SearchEngine._searchIndexDB.put(newObject)
+	  				.then(function (doc) {
+  						fulfill(doc.id);
+	  				});
+				}).catch(function (err) {
+					if (err.name !== 'not_found') {
+						reject('save fail');
+						return;
+					}
+					// Local save a new Ent with ID
+	  				return SearchEngine._searchIndexDB.put(newObject).then(function (doc) {
+  						fulfill(doc.id);
+	  				});
+				});
+			}
 		});
 	},
 	

@@ -15,12 +15,27 @@ Ent.create(
     	_searchFields: ['Body'],
     	_cachedFunction: {
     		genContent: true,
+    		genThreads: true,
     	},
-    	_searchFields: ['Body'],
+    	
     	genContent: function() {
     		return new Promise(function (fulfill, reject) {
     			fulfill(null);
 			});
+    	},
+    	genThread: function() {
+    		return new Promise(function (fulfill, reject) {
+    			Assoc.getAll(this.getID(), 'ACCOS_IMESSAGE_TO_THREAD')
+    			.then(function(res) {
+    				if (!res) {
+    					fulfill(null);
+    				} else {
+    					fulfill(head(res));
+    				}
+    			}).catch(function (err) {
+					reject(err);
+				});
+    		});
     	},
     	
     	addInThread: function(threadID) {
