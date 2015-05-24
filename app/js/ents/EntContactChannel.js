@@ -1,24 +1,24 @@
 'use strict';
 
-Ent.createInterface('IEntContact', {});
+Ent.createInterface('IEntContactChannel', {});
 
 Ent.create(
-  	'EntEmailContact',
+  	'EntEmailContactChannel',
  	{
  		_interfaces: {
- 			IEntContact: true,
+ 			IEntContactContact: true,
  		},
     	_data: {
     		Email: '',
     	},
     	_searchFields: ['Email'],
     	_cachedFunction: {
-    		genUser: true,
+    		genContact: true,
     	},
     	
-    	genUser: function() {
+    	genContact: function() {
     		return new Promise(function (fulfill, reject) {
-    			Assoc.getAll(this.getID(), 'ASSOC_ICONTACT_TO_USER')
+    			Assoc.getAll(this.getID(), 'ASSOC_ICONTACTCHANNEL_TO_CONTACT')
     			.then(function(res) {
     				if (!res) {
     					fulfill(null);
@@ -31,13 +31,13 @@ Ent.create(
     		});
     	},
     	
-    	addToUser: function(userID) {
+    	addToContact: function(contactID) {
     		return GSPromiseExtension.genm({
-    			'user_to_contact': function() {
-    				Assoc.set(userID, this.getID(), 'ACCOS_USER_TO_ICONTACT');
+    			'contact_to_channel': function() {
+    				Assoc.set(contactID, this.getID(), 'ACCOS_CONTACT_TO_ICONTACTCHANNEL');
     			}.bind(this),
-    			'contact_to_user': function() {
-    				Assoc.set(this.getID(), userID, 'ASSOC_ICONTACT_TO_USER');
+    			'channel_to_contact': function() {
+    				Assoc.set(this.getID(), contactID, 'ASSOC_ICONTACTCHANNEL_TO_CONTACT');
     			}.bind(this),
     		});
     	},
